@@ -1,0 +1,48 @@
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+
+local locked = false
+
+local function setupCharacter(character)
+	local humanoid = character:WaitForChild("Humanoid")
+	local root = character:WaitForChild("HumanoidRootPart")
+
+	humanoid.Jumping:Connect(function(jumping)
+		if jumping then
+			-- ล็อกทิศตามกล้องตอนกระโดด
+			local look = camera.CFrame.LookVector
+			local direction = Vector3.new(look.X, 0, look.Z)
+
+			if direction.Magnitude > 0 then
+				direction = direction.Unit
+				root.CFrame = CFrame.lookAt(root.Position, root.Position + direction)
+				locked = true
+			end
+		end
+	end)
+
+	RunService.RenderStepped:Connect(function()
+		if locked and humanoid:GetState() == Enum.HumanoidStateType.Freefall then
+			local look = camera.CFrame.LookVector
+			local direction = Vector3.new(look.X, 0, look.Z)
+
+			if direction.Magnitude > 0 then
+				root.CFrame = CFrame.lookAt(root.Position, root.Position + direction)
+			end
+		end
+
+		if humanoid:GetState() == Enum.HumanoidStateType.Landed then
+			locked = false
+		end
+	end)
+end
+
+if player.Character then
+	setupCharacter(player.Character)
+end
+
+player.CharacterAdded:Connect(setupCharacter)
